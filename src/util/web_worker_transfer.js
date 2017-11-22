@@ -35,12 +35,14 @@ export type Serialized =
 type Registry = {
     [string]: {
         klass: Class<any>,
-        omit: Array<string>
+        omit: Array<string>,
+        shallow: Array<string>
     }
 };
 
 type RegisterOptions<T> = {
-    omit?: Array<$Keys<T>>
+    omit?: Array<$Keys<T>>,
+    shallow?: Array<$Keys<T>>
 }
 
 const registry: Registry = {};
@@ -48,8 +50,9 @@ const registry: Registry = {};
 /**
  * Register the given class as serializable.
  *
- * To mark certain properties as non-serializable (such as cached/computed
- * properties), include an optional { omit: [] } argument.
+ * @param options
+ * @param options.omit List of properties to omit from serialization (e.g., cached/computed properties)
+ * @param options.shallow List of properties that should be serialized by a simple shallow copy, rather than by a recursive call to serialize().
  *
  * @private
  */
@@ -59,7 +62,8 @@ function register<T: any>(klass: Class<T>, options: RegisterOptions<T> = {}) {
     assert(!registry[name], `${name} is already registered.`);
     registry[name] = {
         klass,
-        omit: (options.omit: any) || []
+        omit: (options.omit: any) || [],
+        shallow: (options.shallow: any) || []
     };
 }
 
@@ -120,7 +124,11 @@ function serialize(input: mixed, transferables?: Array<Transferable>): Serialize
     }
 
     if (Array.isArray(input)) {
-        return input.map((i) => serialize(i, transferables));
+        const serialized = [];
+        for (const item of input) {
+            serialized.push(serialize(item, transferables));
+        }
+        return serialized;
     }
 
     if (typeof input === 'object') {
@@ -146,9 +154,14 @@ function serialize(input: mixed, transferables?: Array<Transferable>): Serialize
             // we can remove this complexity.
             properties._serialized = (klass.serialize: typeof serialize)(input, transferables);
         } else {
-            for (const key of Object.keys(input)) {
+            for (const key in input) {
+                // any cast due to https://github.com/facebook/flow/issues/5393
+                if (!(input: any).hasOwnProperty(key)) continue;
                 if (registry[name].omit.indexOf(key) >= 0) continue;
-                properties[key] = serialize(input[key], transferables);
+                const property = (input: any)[key];
+                properties[key] = registry[name].shallow.indexOf(key) >= 0 ?
+                    property :
+                    serialize(property, transferables);
             }
         }
 
@@ -196,7 +209,8 @@ function deserialize(input: Serialized): mixed {
         const result = Object.create(klass.prototype);
 
         for (const key of Object.keys(properties)) {
-            result[key] = deserialize(properties[key]);
+            result[key] = registry[name].shallow.indexOf(key) >= 0 ?
+                properties[key] : deserialize(properties[key]);
         }
 
         return result;

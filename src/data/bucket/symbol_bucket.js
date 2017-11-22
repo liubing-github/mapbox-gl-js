@@ -796,7 +796,10 @@ class SymbolBucket implements Bucket {
     }
 }
 
-register(SymbolBucket, {omit: ['layers', 'collisionBoxArray']});
+register(SymbolBucket, {
+    omit: ['layers', 'collisionBoxArray', 'features', 'compareText'],
+    shallow: ['symbolInstances']
+});
 
 SymbolBucket.programInterfaces = symbolInterfaces;
 
