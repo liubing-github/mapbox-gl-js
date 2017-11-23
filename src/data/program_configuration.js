@@ -5,7 +5,6 @@ import type {GlobalProperties} from "../style-spec/expression/index";
 const createVertexArrayType = require('./vertex_array_type');
 const packUint8ToFloat = require('../shaders/encode_attribute').packUint8ToFloat;
 const Color = require('../style-spec/util/color');
-const Context = require('../gl/context');
 
 import type StyleLayer from '../style/style_layer';
 import type {ViewType, StructArray, SerializedStructArray, StructArrayTypeParameters} from '../util/struct_array';
