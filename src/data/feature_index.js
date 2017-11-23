@@ -65,7 +65,6 @@ class FeatureIndex {
                 overscaling: number,
                 grid?: Grid,
                 featureIndexArray?: FeatureIndexArray) {
-        require('assert')(coord instanceof TileCoord);
         this.coord = coord;
         this.overscaling = overscaling;
         this.x = coord.x;

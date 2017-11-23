@@ -36,14 +36,14 @@ export type Serialized =
 type Registry = {
     [string]: {
         klass: Class<any>,
-        omit: Array<string>,
-        shallow: Array<string>
+        omit: $ReadOnlyArray<string>,
+        shallow: $ReadOnlyArray<string>
     }
 };
 
 type RegisterOptions<T> = {
-    omit?: Array<$Keys<T>>,
-    shallow?: Array<$Keys<T>>
+    omit?: $ReadOnlyArray<$Keys<T>>,
+    shallow?: $ReadOnlyArray<$Keys<T>>
 }
 
 const registry: Registry = {};
@@ -63,8 +63,8 @@ function register<T: any>(klass: Class<T>, options: RegisterOptions<T> = {}) {
     assert(!registry[name], `${name} is already registered.`);
     registry[name] = {
         klass,
-        omit: (options.omit: any) || [],
-        shallow: (options.shallow: any) || []
+        omit: options.omit || [],
+        shallow: options.shallow || []
     };
 }
 

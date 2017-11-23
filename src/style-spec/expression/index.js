@@ -35,13 +35,11 @@ export type GlobalProperties = {
 
 class StyleExpression {
     expression: Expression;
-    propertySpec: StylePropertySpecification;
 
     _evaluator: EvaluationContext;
 
-    constructor(expression: Expression, propertySpec: StylePropertySpecification) {
+    constructor(expression: Expression) {
         this.expression = expression;
-        this.propertySpec = propertySpec;
     }
 
     evaluate(globals: GlobalProperties, feature?: Feature): any {
@@ -56,16 +54,16 @@ class StyleExpression {
 }
 
 class StyleExpressionWithErrorHandling extends StyleExpression {
-    defaultValue: Value;
+    _defaultValue: Value;
     _warningHistory: {[key: string]: boolean};
     _enumValues: {[string]: any};
 
     _evaluator: EvaluationContext;
 
     constructor(expression: Expression, propertySpec: StylePropertySpecification) {
-        super(expression, propertySpec);
+        super(expression);
         this._warningHistory = {};
-        this.defaultValue = getDefaultValue(propertySpec);
+        this._defaultValue = getDefaultValue(propertySpec);
         if (propertySpec.type === 'enum') {
             this._enumValues = propertySpec.values;
         }
@@ -82,7 +80,7 @@ class StyleExpressionWithErrorHandling extends StyleExpression {
         try {
             const val = this.expression.evaluate(this._evaluator);
             if (val === null || val === undefined) {
-                return this.defaultValue;
+                return this._defaultValue;
             }
             if (this._enumValues && !(val in this._enumValues)) {
                 throw new RuntimeError(`Expected value to be one of ${Object.keys(this._enumValues).map(v => JSON.stringify(v)).join(', ')}, but found ${JSON.stringify(val)} instead.`);
@@ -95,7 +93,7 @@ class StyleExpressionWithErrorHandling extends StyleExpression {
                     console.warn(e.message);
                 }
             }
-            return this.defaultValue;
+            return this._defaultValue;
         }
     }
 }
@@ -125,7 +123,7 @@ function createExpression(expression: mixed,
     }
 
     if (options.handleErrors === false) {
-        return success(new StyleExpression(parsed, propertySpec));
+        return success(new StyleExpression(parsed));
     } else {
         return success(new StyleExpressionWithErrorHandling(parsed, propertySpec));
     }
@@ -254,7 +252,7 @@ class StylePropertyFunction<T> {
     kind: 'constant' | 'source' | 'camera' | 'composite';
     evaluate: (globals: GlobalProperties, feature?: Feature) => any;
     interpolationFactor: ?(input: number, lower: number, upper: number) => number;
-    zoomStops: ?Array<number>
+    zoomStops: ?Array<number>;
 
     constructor(parameters: PropertyValueSpecification<T>, specification: StylePropertySpecification) {
         this._parameters = parameters;
